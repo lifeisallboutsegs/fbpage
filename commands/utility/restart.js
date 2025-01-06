@@ -6,7 +6,7 @@ module.exports = {
   category: "system",
   adminOnly: true,
   description: "Restarts the bot",
-  async execute(messenger, senderId) {
+  async execute(messenger, senderId, event) {
     const restartTime = Date.now();
 
     
@@ -14,6 +14,7 @@ module.exports = {
       restarted: true,
       timestamp: restartTime,
       senderId: senderId,
+      mid: event.message.mid,
     };
 
     fs.writeFileSync('./data/restart.json', JSON.stringify(restartInfo));
