@@ -23,7 +23,8 @@ async function loadCommands() {
   logger.info(`Loaded ${commands.size} commands`);
 }
 
-async function handleCommand(messenger, senderId, message) {
+async function handleCommand(messenger, senderId, message, event) {
+  console.log(event);
   const config = JSON.parse(await fs.readFile('data/config.json', 'utf8'));
   if (!message.startsWith(config.prefix)) return;
 

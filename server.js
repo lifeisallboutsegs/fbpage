@@ -60,7 +60,7 @@ app.post("/webhook", async (req, res) => {
         const sender = event.sender.id;
 
         if (event.message && event.message.text) {
-          await handleCommand(messenger, sender, event.message.text);
+          await handleCommand(messenger, sender, event.message.text, event);
         }
       }
     }
