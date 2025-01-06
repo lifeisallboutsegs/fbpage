@@ -27,7 +27,7 @@ const SenderActions = {
 
 class Messenger {
   apiDomain = "graph.facebook.com";
-  apiVersion = "18.0";
+  apiVersion = "21.0";
   apiUrl;
   platform;
   pageId;
@@ -78,7 +78,36 @@ class Messenger {
     });
   }
 
+ async sendTextMessage(userId, message, reply) {
+  metrics.incrementCount();
+  const baseParams = {
+    recipient: JSON.stringify({ id: userId }),
+    messaging_type: MessageTypes.RESPONSE,
+  };
 
+  if (reply) {
+    return this.#sendApiRequest(
+      `${this.pageId}/messages`,
+      {
+        ...baseParams,
+        message: JSON.stringify({
+          text: message,
+          reply_to: reply // Direct message ID reference
+        })
+      },
+      "POST"
+    );
+  }
+
+  return this.#sendApiRequest(
+    `${this.pageId}/messages`,
+    {
+      ...baseParams,
+      message: JSON.stringify({ text: message })
+    },
+    "POST"
+  );
+}
   async sendImage(userId, imageUrl) {
     metrics.incrementCount();
     return this.#sendApiRequest(
