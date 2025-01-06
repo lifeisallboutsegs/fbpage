@@ -5,6 +5,7 @@ const { logger } = require("./utils/logger.js");
 const { metrics } = require("./utils/metrics");
 const { handleCommand } = require("./commandHandler");
 const fs = require("fs").promises;
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -34,9 +35,19 @@ app.get("/webhook", (req, res) => {
   }
 });
 
+app.get("/privacy-policy", (req, res) => {
+  res.sendFile(path.join(__dirname, "privacy_policy.html"));
+});
+
+// Serve Terms of Service
+app.get("/terms-of-service", (req, res) => {
+  res.sendFile(path.join(__dirname, "terms_of_service.html"));
+});
+
 // Message handling
 app.post("/webhook", async (req, res) => {
   const { body } = req;
+  console.log(body);
 
   if (body.object === "page") {
     for (const entry of body.entry) {
