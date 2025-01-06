@@ -5,7 +5,7 @@ class Metrics {
     this.messageCount = 0;
   }
   incrementCount() {
-    this.messageCount++
+    this.messageCount = this.messageCount + 1;
   }
   recordStartTime() {
     this.startTime = Date.now();

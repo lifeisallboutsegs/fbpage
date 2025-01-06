@@ -78,36 +78,22 @@ class Messenger {
     });
   }
 
- async sendTextMessage(userId, message, reply) {
-  metrics.incrementCount();
-  const baseParams = {
-    recipient: JSON.stringify({ id: userId }),
-    messaging_type: MessageTypes.RESPONSE,
-  };
+  async sendTextMessage(userId, message, reply) {
+    await metrics.incrementCount();
+    const baseParams = {
+      recipient: JSON.stringify({ id: userId }),
+      messaging_type: MessageTypes.RESPONSE,
+    };
 
-  if (reply) {
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {
         ...baseParams,
-        message: JSON.stringify({
-          text: message,
-          reply_to: reply // Direct message ID reference
-        })
+        message: JSON.stringify({ text: message }),
       },
       "POST"
     );
   }
-
-  return this.#sendApiRequest(
-    `${this.pageId}/messages`,
-    {
-      ...baseParams,
-      message: JSON.stringify({ text: message })
-    },
-    "POST"
-  );
-}
   async sendImage(userId, imageUrl) {
     metrics.incrementCount();
     return this.#sendApiRequest(
