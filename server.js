@@ -38,6 +38,7 @@ app.get('/webhook', (req, res) => {
 
 // Message handling
 app.post('/webhook', async (req, res) => {
+  console.log(req);
   const { body } = req;
   
   if (body.object === 'page') {
@@ -51,7 +52,6 @@ app.post('/webhook', async (req, res) => {
     }
     res.status(200).send('EVENT_RECEIVED');
   } else {
-    console.log(body);
     res.sendStatus(200);
   }
 });
