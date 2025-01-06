@@ -14,9 +14,9 @@ module.exports = {
       
       return messenger.sendTextMessage(senderId, 
         `📖 Command: ${command.name}\n` +
-        `Category: ${command.category}\n` +
-        `Description: ${command.description}\n` +
-        `Admin Only: ${command.adminOnly ? 'Yes' : 'No'}`
+        `⇒ Category: ${command.category}\n` +
+        `⇒ Description: ${command.description}\n` +
+        `⇒ Admin Only: ${command.adminOnly ? 'Yes' : 'No'}`
       );
     }
     
@@ -26,11 +26,11 @@ module.exports = {
       categories[cmd.category].push(cmd.name);
     });
     
-    let helpText = `🤖 ${config.name} Commands\n\n`;
+    let helpText = `🤖 ${config.name}\n\n`;
     for (const [category, cmds] of Object.entries(categories)) {
-      helpText += `${category}:\n${cmds.join(', ')}\n\n`;
+      helpText += `⌈${category}⌋\n${cmds.join(', ')}\n\n`;
     }
-    helpText += `\nUse ${config.prefix}help <command> for details`;
+    helpText += `⇒ Total: ${commands.size} commands\n⇒ Use ${config.prefix}[command] to get more information about a command.`;
     
     await messenger.sendTextMessage(senderId, helpText);
   }

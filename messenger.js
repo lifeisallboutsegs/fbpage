@@ -6,7 +6,7 @@
  */
 
 const fetch = require("node-fetch"); // Keep this only if Node.js version < 18
-
+const { metrics } = require('./utils/metrics');
 const Platforms = {
   Messenger: "messenger",
   Instagram: "instagram",
@@ -66,6 +66,7 @@ class Messenger {
   }
 
   async sendTextMessage(userId, message) {
+    
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {

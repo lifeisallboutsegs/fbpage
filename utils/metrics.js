@@ -4,7 +4,9 @@ class Metrics {
     this.commandLatency = new Map();
     this.messageCount = 0;
   }
-
+  incrementCount() {
+    this.messageCount++
+  }
   recordStartTime() {
     this.startTime = Date.now();
   }
@@ -21,12 +23,11 @@ class Metrics {
       uptime: Date.now() - this.startTime,
       messageCount: this.messageCount,
       averageLatency: Object.fromEntries(
-        Array.from(this.commandLatency.entries())
-          .map(([cmd, latencies]) => [
-            cmd,
-            (latencies.reduce((a, b) => a + b) / latencies.length).toFixed(2)
-          ])
-      )
+        Array.from(this.commandLatency.entries()).map(([cmd, latencies]) => [
+          cmd,
+          (latencies.reduce((a, b) => a + b) / latencies.length).toFixed(2),
+        ])
+      ),
     };
   }
 }
