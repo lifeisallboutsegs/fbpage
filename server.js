@@ -36,12 +36,12 @@ app.get("/webhook", (req, res) => {
 });
 
 app.get("/privacy-policy", (req, res) => {
-  res.sendFile(path.join(__dirname, "privacy_policy.html"));
+  res.status(200).sendFile(path.join(__dirname, "privacy_policy.html"));
 });
 
 // Serve Terms of Service
 app.get("/terms-of-service", (req, res) => {
-  res.sendFile(path.join(__dirname, "terms_of_service.html"));
+  res.status(200).sendFile(path.join(__dirname, "terms_of_service.html"));
 });
 
 // Message handling
