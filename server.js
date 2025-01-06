@@ -18,8 +18,19 @@ const messenger = new Messenger(
   process.env.ACCESS_TOKEN
 );
 
-
-messenger.getConversations().then((d) => messenger.getConversationMessages(d.data[0].id, 'hi').then((d) => messenger.getMessageDetails(d.messe));
+messenger
+  .getConversations()
+  .then((d) =>
+    messenger
+      .getConversationMessages(d.data[1].id, "hi")
+      .then((d) =>
+        messenger
+          .getMessageDetails(d.messages.data[0].id)
+          .then((d) => {
+  messenger.sendTextMessage("8725930454187855", "hi baby");
+})
+      )
+  );
 app.use(bodyParser.json());
 
 // Webhook verification
