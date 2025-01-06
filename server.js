@@ -22,12 +22,12 @@ messenger
   .getConversations()
   .then((d) =>
     messenger
-      .getConversationMessages(d.data[1].id, "hi")
+      .getConversationMessages(8839970979443444)
       .then((d) =>
         messenger
           .getMessageDetails(d.messages.data[0].id)
           .then((d) => {
-  messenger.sendTextMessage("8725930454187855", "hi baby");
+ console.log(d)
 })
       )
   );
