@@ -3,9 +3,9 @@ module.exports = {
   category: 'utility',
   description: 'Check bot latency',
   async execute(messenger, senderId) {
-    const start = performance.now();
+    const start = Date.now();
     await messenger.sendTextMessage(senderId, '🏓 Pinging...');
-    const latency = Math.round(performance.now() - start);
+    const latency = Math.round(Date.now() - start);
     
     await messenger.sendTextMessage(senderId,
       `🏓 Pong!\n` +

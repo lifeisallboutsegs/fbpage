@@ -34,9 +34,9 @@ async function handleCommand(messenger, senderId, message) {
   if (!command) return;
 
   try {
-    const start = performance.now();
+    const start = Date.now();
     await command.execute(messenger, senderId, args);
-    metrics.updateMetrics(commandName, performance.now() - start);
+    metrics.updateMetrics(commandName, Date.now() - start);
   } catch (error) {
     logger.error(`Command error: ${commandName}`, error);
     await messenger.sendTextMessage(senderId, 'Command execution failed');

@@ -3,11 +3,11 @@ const bodyParser = require("body-parser");
 const { Messenger, Platforms } = require("./messenger.js");
 const { logger } = require("./utils/logger.js");
 const { metrics } = require("./utils/metrics");
-const { handleCommand } = require("./commandHandler");
+const { handleCommand, loadCommands } = require("./commandHandler");
 const fs = require("fs").promises;
 const path = require("path");
 require("dotenv").config();
-
+loadCommands();
 const app = express();
 const port = process.env.PORT || 3000;
 let startTime = Date.now();
@@ -55,18 +55,22 @@ app.post("/webhook", async (req, res) => {
 
   if (body.object === "page") {
     for (const entry of body.entry) {
-      const webhook_event = entry.messaging[0];
-      const senderId = webhook_event.sender.id;
+      const messagingEvents = entry.messaging;
+      for (let i = 0; i < messagingEvents.length; i++) {
+        const event = messagingEvents[i];
+        const sender = event.sender.id;
 
-      if (webhook_event.message) {
-        await handleCommand(messenger, senderId, webhook_event.message.text);
+        if (event.message && event.message.text) {
+          await handleCommand(messenger, sender, event.message.text);
+        }
       }
     }
     res.status(200).send("EVENT_RECEIVED");
   } else {
-    res.sendStatus(200);
+    res.sendStatus(404);
   }
 });
+
 
 // Error handling
 process.on("unhandledRejection", (error) => {
