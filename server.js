@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Messenger, Platforms } = require('./messenger');
-const { logger } = require('./utils/logger');
+const { Messenger, Platforms } = require('./messenger.js');
+const { logger } = require('./utils/logger.js');
 const { metrics } = require('./utils/metrics');
 const { handleCommand } = require('./commandHandler');
 const fs = require('fs').promises;
