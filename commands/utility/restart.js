@@ -6,7 +6,7 @@ module.exports = {
   category: "system",
   adminOnly: true,
   description: "Restarts the bot",
-  async execute(messenger, senderId, event) {
+  async execute(messenger, senderId, args, event) {
     const restartTime = Date.now();
 
     

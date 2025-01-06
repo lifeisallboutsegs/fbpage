@@ -21,7 +21,7 @@ const messenger = new Messenger(
 app.use(bodyParser.json());
 
 async function checkRestartStatus() {
-  const filePath = 'data/restart.json'
+  const filePath = "data/restart.json";
 
   if (await fs.stat(filePath).catch(() => false)) {
     const data = await fs.readFile(filePath);
@@ -29,8 +29,15 @@ async function checkRestartStatus() {
 
     if (restartInfo.restarted) {
       const restartTime = new Date(restartInfo.timestamp).toLocaleString();
-      logger.info(`Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`);
-      messenger.sendTextMessage(restartInfo.senderId, `✅ Bot restarted, took ${(Date.now() - restartInfo.timestamp) / 1000} seconds.`);
+      logger.info(
+        `Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`
+      );
+      messenger.sendTextMessage(
+        restartInfo.senderId,
+        `✅ Bot restarted, took ${
+          (Date.now() - restartInfo.timestamp) / 1000
+        } seconds.`
+      );
 
       // Update restart status to false
       restartInfo.restarted = false;
@@ -76,7 +83,17 @@ app.post("/webhook", async (req, res) => {
         const sender = event.sender.id;
 
         if (event.message && event.message.text) {
-          await handleCommand(messenger, sender, event.message.text, event);
+          if (await fs.stat("data/restart.json").catch(() => false)) {
+            const data = await fs.readFile("data/restart.json");
+            const restartInfo = JSON.parse(data);
+
+            if (restartInfo.restarted) {
+              if (event.message.mid === restartInfo.mid) {
+                return;
+              }
+            }
+            await handleCommand(messenger, sender, event.message.text, event);
+          }
         }
       }
     }
