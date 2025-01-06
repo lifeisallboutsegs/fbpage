@@ -21,9 +21,11 @@ app.use(bodyParser.json());
 
 // Webhook verification
 app.get('/webhook', (req, res) => {
+  console.log(req);
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
+  console.log(req.query);
 
   if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
     logger.info('Webhook verified');
@@ -49,7 +51,8 @@ app.post('/webhook', async (req, res) => {
     }
     res.status(200).send('EVENT_RECEIVED');
   } else {
-    res.sendStatus(404);
+    console.log(body);
+    res.sendStatus(200);
   }
 });
 
