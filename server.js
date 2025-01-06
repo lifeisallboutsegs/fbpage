@@ -87,10 +87,8 @@ app.post("/webhook", async (req, res) => {
             const data = await fs.readFile("data/restart.json");
             const restartInfo = JSON.parse(data);
 
-            if (restartInfo.restarted) {
-              if (event.message.mid === restartInfo.mid) {
-                return;
-              }
+            if (event.message.mid === restartInfo.mid) {
+              return res.status(200).send("EVENT_RECEIVED");
             }
             await handleCommand(messenger, sender, event.message.text, event);
           }
