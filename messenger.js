@@ -6,7 +6,7 @@
  */
 
 const fetch = require("node-fetch"); // Keep this only if Node.js version < 18
-const { metrics } = require('./utils/metrics');
+const { metrics } = require("./utils/metrics");
 
 const Platforms = {
   Messenger: "messenger",
@@ -27,7 +27,7 @@ const SenderActions = {
 
 class Messenger {
   apiDomain = "graph.facebook.com";
-  apiVersion = "15.0";
+  apiVersion = "18.0";
   apiUrl;
   platform;
   pageId;
@@ -78,25 +78,6 @@ class Messenger {
     });
   }
 
-  async sendTextMessage(userId, message, reply) {
-    metrics.incrementCount();
-    
-    const data = {
-    text: message,
-    reply_to: {
-      mid: reply,
-    },
-  };
-    return this.#sendApiRequest(
-      `${this.pageId}/messages`,
-      {
-        recipient: JSON.stringify({ id: userId }),
-        messaging_type: "RESPONSE",
-        message: data,
-      },
-      "POST"
-    );
-  }
 
   async sendImage(userId, imageUrl) {
     metrics.incrementCount();
@@ -155,7 +136,9 @@ class Messenger {
     metrics.incrementCount();
     const validTypes = ["file", "audio", "image", "video"];
     if (!validTypes.includes(type)) {
-      throw new Error(`Invalid attachment type. Must be one of: ${validTypes.join(", ")}`);
+      throw new Error(
+        `Invalid attachment type. Must be one of: ${validTypes.join(", ")}`
+      );
     }
 
     return this.#sendApiRequest(
@@ -222,7 +205,9 @@ class Messenger {
   }
 
   async sendBulkMessages(userIds, message) {
-    const promises = userIds.map(userId => this.sendTextMessage(userId, message));
+    const promises = userIds.map((userId) =>
+      this.sendTextMessage(userId, message)
+    );
     return Promise.all(promises);
   }
 
@@ -238,8 +223,6 @@ class Messenger {
     );
   }
 }
-
-
 
 module.exports = {
   Platforms,
