@@ -7,14 +7,15 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "fastify": "^4.21.0",
-    "handlebars": "^4.7.8",
-    "@fastify/formbody": "^7.4.0",
-    "@fastify/static": "^6.10.2",
-    "@fastify/view": "^8.0.0"
+    "body-parser": "^2.0.2",
+    "chalk": "^5.4.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-fetch": "^2.7.0",
+    "winston": "^3.17.0"
   },
   "engines": {
-    "node": "14.x"
+    "node": "18.18.0"
   },
   "repository": {
     "url": "https://glitch.com/edit/#!/glitch-hello-node"
