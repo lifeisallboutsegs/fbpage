@@ -32,15 +32,15 @@ async function handleCommand(messenger, senderId, message, event) {
   const args = message.slice(config.prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
   const command = commands.get(commandName);
-  if (!command) return messenger.sendTextMessage(senderId, "Command not found.");
+  if (!command) return messenger.sendTextMessage(senderId, "Command not found.", event.message.mid);
 
   try {
     const start = Date.now();
-    await command.execute(messenger, senderId, args);
+    await command.execute(messenger, senderId, args, event);
     metrics.updateMetrics(commandName, Date.now() - start);
   } catch (error) {
     logger.error(`Command error: ${commandName}`, error);
-    await messenger.sendTextMessage(senderId, 'Command execution failed.');
+    await messenger.sendTextMessage(senderId, 'Command execution failed.', event.message.mid);
   }
 }
 

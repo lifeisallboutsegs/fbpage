@@ -5,7 +5,7 @@ module.exports = {
   name: 'help',
   category: 'utility',
   description: 'Show command list',
-  async execute(messenger, senderId, args) {
+  async execute(messenger, senderId, args, event) {
     const config = JSON.parse(await fs.readFile('data/config.json', 'utf8'));
     
     if (args.length) {
@@ -32,6 +32,6 @@ module.exports = {
     }
     helpText += `⇒ Total: ${commands.size} commands\n⇒ Use ${config.prefix}[command] to get more information about a command.`;
     
-    await messenger.sendTextMessage(senderId, helpText);
+    await messenger.sendTextMessage(senderId, helpText, event.message.mid);
   }
 };

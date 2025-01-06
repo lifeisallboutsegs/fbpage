@@ -78,20 +78,28 @@ class Messenger {
     });
   }
 
-  async sendTextMessage(userId, message) {
+  async sendTextMessage(userId, message, reply) {
     metrics.incrementCount();
+    
+    const data = {
+    text: message,
+    reply_to: {
+      mid: reply,
+    },
+  };
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {
         recipient: JSON.stringify({ id: userId }),
         messaging_type: "RESPONSE",
-        message: JSON.stringify({ text: message }),
+        message: data,
       },
       "POST"
     );
   }
 
   async sendImage(userId, imageUrl) {
+    metrics.incrementCount();
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {
@@ -124,6 +132,7 @@ class Messenger {
   }
 
   async sendVideo(userId, videoUrl) {
+    metrics.incrementCount();
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {
@@ -143,6 +152,7 @@ class Messenger {
   }
 
   async sendAttachmentMessage(userId, attachmentUrl, type = "file") {
+    metrics.incrementCount();
     const validTypes = ["file", "audio", "image", "video"];
     if (!validTypes.includes(type)) {
       throw new Error(`Invalid attachment type. Must be one of: ${validTypes.join(", ")}`);
@@ -168,6 +178,7 @@ class Messenger {
   }
 
   async sendQuickReplies(userId, text, quickReplies) {
+    metrics.incrementCount();
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {
@@ -227,6 +238,8 @@ class Messenger {
     );
   }
 }
+
+
 
 module.exports = {
   Platforms,
