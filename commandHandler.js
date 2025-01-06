@@ -25,14 +25,14 @@ async function loadCommands() {
 
 async function handleCommand(messenger, senderId, message, event) {
   console.log(event);
+  await messenger.markMessageSeen(event.sender.id);
   const config = JSON.parse(await fs.readFile('data/config.json', 'utf8'));
   if (!message.startsWith(config.prefix)) return;
-
+  await messenger.sendTypingIndicator(event.sender.id, 'typing_on');
   const args = message.slice(config.prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
   const command = commands.get(commandName);
-
-  if (!command) return;
+  if (!command) return messenger.sendTextMessage(senderId, "Command not found.");
 
   try {
     const start = Date.now();
@@ -40,7 +40,7 @@ async function handleCommand(messenger, senderId, message, event) {
     metrics.updateMetrics(commandName, Date.now() - start);
   } catch (error) {
     logger.error(`Command error: ${commandName}`, error);
-    await messenger.sendTextMessage(senderId, 'Command execution failed');
+    await messenger.sendTextMessage(senderId, 'Command execution failed.');
   }
 }
 
