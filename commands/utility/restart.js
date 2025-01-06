@@ -12,7 +12,8 @@ module.exports = {
     
     const restartInfo = {
       restarted: true,
-      timestamp: restartTime
+      timestamp: restartTime,
+      senderId: senderId,
     };
 
     fs.writeFileSync('./data/restart.json', JSON.stringify(restartInfo));

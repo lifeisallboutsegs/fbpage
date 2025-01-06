@@ -34,6 +34,12 @@ async function handleCommand(messenger, senderId, message, event) {
   const command = commands.get(commandName);
   if (!command) return messenger.sendTextMessage(senderId, "Command not found.", event.message.mid);
 
+  // Check if sender is an admin
+  const adminUids = JSON.parse(await fs.readFile('data/admins.json', 'utf8'));
+  if (!adminUids.includes(senderId)) {
+    return messenger.sendTextMessage(senderId, "You do not have permission to use this command.", event.message.mid);
+  }
+
   try {
     const start = Date.now();
     await command.execute(messenger, senderId, args, event);

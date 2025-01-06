@@ -30,7 +30,7 @@ async function checkRestartStatus() {
     if (restartInfo.restarted) {
       const restartTime = new Date(restartInfo.timestamp).toLocaleString();
       logger.info(`Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`);
-      console.log(`Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`);
+      messenger.sendTextMessage(restartInfo.senderId, `✅ Bot restarted, took ${(Date.now() - restartInfo.timestamp) / 1000} seconds.`);
 
       // Update restart status to false
       restartInfo.restarted = false;
