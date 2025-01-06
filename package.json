@@ -11,14 +11,11 @@
     "chalk": "^5.4.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "fs-extra": "^11.2.0",
     "node-fetch": "^2.7.0",
-    "perf_hooks": "0.0.1",
-    "util": "^0.12.5",
     "winston": "^3.17.0"
   },
   "engines": {
-    "node": "18.18.0"
+    "node": "18.x"
   },
   "repository": {
     "url": "https://glitch.com/edit/#!/glitch-hello-node"
