@@ -5,6 +5,7 @@ module.exports = {
   name: 'status',
   category: 'utility',
   description: 'Show bot status',
+  adminOnly: true,
   async execute(messenger, senderId) {
     const memory = process.memoryUsage();
     const stats = {

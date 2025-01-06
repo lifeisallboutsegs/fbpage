@@ -20,7 +20,25 @@ const messenger = new Messenger(
 
 app.use(bodyParser.json());
 
-// Webhook verification
+async function checkRestartStatus() {
+  const filePath = 'data/restart.json'
+
+  if (await fs.stat(filePath).catch(() => false)) {
+    const data = await fs.readFile(filePath);
+    const restartInfo = JSON.parse(data);
+
+    if (restartInfo.restarted) {
+      const restartTime = new Date(restartInfo.timestamp).toLocaleString();
+      logger.info(`Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`);
+      console.log(`Bot restarted. Restart took ${Date.now() - restartInfo.timestamp}ms`);
+
+      // Update restart status to false
+      restartInfo.restarted = false;
+      await fs.writeFile(filePath, JSON.stringify(restartInfo));
+    }
+  }
+}
+
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -39,7 +57,6 @@ app.get("/privacy-policy", (req, res) => {
   res.status(200).sendFile(path.join(__dirname, "privacy_policy.html"));
 });
 
-// Serve Terms of Service
 app.get("/terms-of-service", (req, res) => {
   res.status(200).sendFile(path.join(__dirname, "terms_of_service.html"));
 });
@@ -48,7 +65,6 @@ app.get("/data-deletion", (req, res) => {
   res.sendFile(path.join(__dirname, "data_deletion.html"));
 });
 
-// Message handling
 app.post("/webhook", async (req, res) => {
   const { body } = req;
 
@@ -70,7 +86,6 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-
 // Error handling
 process.on("unhandledRejection", (error) => {
   logger.error("Unhandled rejection:", error);
@@ -78,6 +93,7 @@ process.on("unhandledRejection", (error) => {
 
 async function init() {
   try {
+    await checkRestartStatus();
     await app.listen(port);
     logger.info(`Bot running on port ${port}`);
     metrics.recordStartTime();
