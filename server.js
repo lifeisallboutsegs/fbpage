@@ -44,6 +44,10 @@ app.get("/terms-of-service", (req, res) => {
   res.status(200).sendFile(path.join(__dirname, "terms_of_service.html"));
 });
 
+app.get("/data-deletion", (req, res) => {
+  res.sendFile(path.join(__dirname, "data_deletion.html"));
+});
+
 // Message handling
 app.post("/webhook", async (req, res) => {
   const { body } = req;
