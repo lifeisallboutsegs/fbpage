@@ -27,7 +27,7 @@ async function loadCommands() {
 }
 
 async function handleCommand(messenger, senderId, message, event) {
-  console.log(event);
+  console.log(comman);
   await messenger.markMessageSeen(event.sender.id);
   
   // Check if this is a reply to a previous message
@@ -35,7 +35,7 @@ async function handleCommand(messenger, senderId, message, event) {
     const repliedToMid = event.message.reply_to.mid;
     const handler = global.replyHandlers.get(repliedToMid);
     
-    if (handler && handler.recipientId === event.recipient.id) {
+    if (handler && handler.recipientId === event.sender.id) {
       const command = commands.get(handler.commandName);
       if (command && typeof command.replyExecute === 'function') {
         try {

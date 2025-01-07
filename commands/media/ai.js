@@ -7,12 +7,12 @@ module.exports = {
   name: "ai",
   category: "AI",
   description: "Interact with an AI assistant.",
-  
+
   async execute(messenger, senderId, args, event) {
     try {
-      const messageContent = args.join(" ");
-      
-      if (!messageContent.trim()) {
+      const messageContent = args.join(" ").trim();
+
+      if (!messageContent) {
         await messenger.sendTextMessage(
           senderId,
           "⚠️ Please provide a message for the AI to respond to."
@@ -20,13 +20,17 @@ module.exports = {
         return;
       }
 
+      // Initialize chat history for the user if not already present
       if (!userChatHistories[senderId]) {
         userChatHistories[senderId] = [
           { role: "system", content: "You are a helpful assistant." },
         ];
       }
 
-      userChatHistories[senderId].push({ role: "user", content: messageContent });
+      userChatHistories[senderId].push({
+        role: "user",
+        content: messageContent,
+      });
 
       const payload = {
         model: "llama-3.3-70b-versatile",
@@ -45,7 +49,10 @@ module.exports = {
       );
 
       const aiMessage = response.data.choices[0].message.content;
-      userChatHistories[senderId].push({ role: "assistant", content: aiMessage });
+      userChatHistories[senderId].push({
+        role: "assistant",
+        content: aiMessage,
+      });
 
       if (!globalChatHistory[senderId]) {
         globalChatHistory[senderId] = [];
@@ -55,21 +62,23 @@ module.exports = {
         assistant: aiMessage,
       });
 
-      const messageResponse = await messenger.sendTextMessage(senderId, aiMessage);
-      
-      // Set reply handler for the new message, removing any previous handlers for this user
+      const messageResponse = await messenger.sendTextMessage(
+        senderId,
+        aiMessage
+      );
+
       if (messageResponse && messageResponse.message_id) {
-        // Remove old handlers for this recipient
-        for (const [mid, handler] of global.replyHandlers.entries()) {
+        // Delete previous handlers for this user before setting the new one
+        [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
           if (handler.recipientId === event.recipient.id) {
             global.replyHandlers.delete(mid);
           }
-        }
-        
-        // Set new handler
+        });
+
+        // Add the new handler
         global.replyHandlers.set(messageResponse.message_id, {
           recipientId: event.recipient.id,
-          commandName: "ai"
+          commandName: "ai",
         });
       }
     } catch (error) {
@@ -83,15 +92,18 @@ module.exports = {
 
   async replyExecute(messenger, senderId, event) {
     try {
-      const messageContent = event.message.text;
-      
+      const messageContent = event.message.text.trim();
+
       if (!userChatHistories[senderId]) {
         userChatHistories[senderId] = [
           { role: "system", content: "You are a helpful assistant." },
         ];
       }
 
-      userChatHistories[senderId].push({ role: "user", content: messageContent });
+      userChatHistories[senderId].push({
+        role: "user",
+        content: messageContent,
+      });
 
       const payload = {
         model: "llama-3.3-70b-versatile",
@@ -110,7 +122,10 @@ module.exports = {
       );
 
       const aiMessage = response.data.choices[0].message.content;
-      userChatHistories[senderId].push({ role: "assistant", content: aiMessage });
+      userChatHistories[senderId].push({
+        role: "assistant",
+        content: aiMessage,
+      });
 
       if (!globalChatHistory[senderId]) {
         globalChatHistory[senderId] = [];
@@ -120,18 +135,21 @@ module.exports = {
         assistant: aiMessage,
       });
 
-      // Delete the old reply handler before sending the new message
+      // Remove the old reply handler if it exists
       if (event.message.reply_to) {
         global.replyHandlers.delete(event.message.reply_to.mid);
       }
 
-      const messageResponse = await messenger.sendTextMessage(senderId, aiMessage);
-      
-      // Set new handler for this message
+      const messageResponse = await messenger.sendTextMessage(
+        senderId,
+        aiMessage
+      );
+
       if (messageResponse && messageResponse.message_id) {
+        // Add the new reply handler
         global.replyHandlers.set(messageResponse.message_id, {
           recipientId: event.recipient.id,
-          commandName: "ai"
+          commandName: "ai",
         });
       }
     } catch (error) {
@@ -141,5 +159,5 @@ module.exports = {
         "⚠️ Sorry, I couldn't process your reply right now. Please try again later."
       );
     }
-  }
+  },
 };
