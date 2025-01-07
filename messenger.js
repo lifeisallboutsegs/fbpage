@@ -83,8 +83,13 @@ class Messenger {
     const baseParams = {
       recipient: JSON.stringify({ id: userId }),
       messaging_type: MessageTypes.RESPONSE,
+      message: { message },
     };
-
+    if (reply) {
+      baseParams.message.reply_to = {
+        message_id: reply,
+      };
+    }
     return this.#sendApiRequest(
       `${this.pageId}/messages`,
       {

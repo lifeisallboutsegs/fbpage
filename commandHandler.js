@@ -60,7 +60,7 @@ async function handleCommand(messenger, senderId, message, event) {
   const command = commands.get(commandName);
   
   if (!command) {
-    return messenger.sendTextMessage(senderId, "Command not found.");
+    return messenger.sendTextMessage(senderId, "Command not found.", event.message.mid);
   }
 
   
