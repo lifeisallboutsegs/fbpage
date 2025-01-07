@@ -72,8 +72,6 @@ app.get("/data-deletion", (req, res) => {
   res.sendFile(path.join(__dirname, "data_deletion.html"));
 });
 
-messenger.sendTextMessage("8725930454187855", "hi hello", "m_f2aSV1RShicaCA2r0tN09vReb11cdO7Ly9vCddCXnHW6ztjpTE4qgblyHuhPo38INRihUxZxPeSGCDsUF-hqZg");
-
 app.post("/webhook", async (req, res) => {
   const { body } = req;
   
