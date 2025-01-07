@@ -7,9 +7,9 @@ module.exports = {
   name: "ai",
   category: "AI",
   description: "Interact with an AI assistant.",
-  async execute(messenger, senderId, args) {
+  
+  async execute(messenger, senderId, args, event) {
     try {
-      // Join the arguments into a single message
       const messageContent = args.join(" ");
       
       if (!messageContent.trim()) {
@@ -20,41 +20,33 @@ module.exports = {
         return;
       }
 
-      // Initialize the sender's chat history if it doesn't exist
       if (!userChatHistories[senderId]) {
         userChatHistories[senderId] = [
           { role: "system", content: "You are a helpful assistant." },
         ];
       }
 
-      // Add user's message to their chat history
       userChatHistories[senderId].push({ role: "user", content: messageContent });
 
-      // Prepare the payload for the API call
       const payload = {
         model: "llama-3.3-70b-versatile",
         messages: userChatHistories[senderId],
       };
 
-      // Make the API call
       const response = await axios.post(
         "https://api.groq.com/openai/v1/chat/completions",
         payload,
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer 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`, // Replace with your actual API key
+            Authorization: `Bearer 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`,
           },
         }
       );
 
-      // Extract the AI's response from the API response
       const aiMessage = response.data.choices[0].message.content;
-
-      // Add the AI's response to the user's chat history
       userChatHistories[senderId].push({ role: "assistant", content: aiMessage });
 
-      // Update global chat history
       if (!globalChatHistory[senderId]) {
         globalChatHistory[senderId] = [];
       }
@@ -63,9 +55,23 @@ module.exports = {
         assistant: aiMessage,
       });
 
-      // Send the AI's response to the user
-      const data = await messenger.sendTextMessage(senderId, aiMessage);
-      console.log(data);
+      const messageResponse = await messenger.sendTextMessage(senderId, aiMessage);
+      
+      // Set reply handler for the new message, removing any previous handlers for this user
+      if (messageResponse && messageResponse.message_id) {
+        // Remove old handlers for this recipient
+        for (const [mid, handler] of global.replyHandlers.entries()) {
+          if (handler.recipientId === event.recipient.id) {
+            global.replyHandlers.delete(mid);
+          }
+        }
+        
+        // Set new handler
+        global.replyHandlers.set(messageResponse.message_id, {
+          recipientId: event.recipient.id,
+          commandName: "ai"
+        });
+      }
     } catch (error) {
       console.error("AI command error:", error.message);
       await messenger.sendTextMessage(
@@ -74,4 +80,66 @@ module.exports = {
       );
     }
   },
+
+  async replyExecute(messenger, senderId, event) {
+    try {
+      const messageContent = event.message.text;
+      
+      if (!userChatHistories[senderId]) {
+        userChatHistories[senderId] = [
+          { role: "system", content: "You are a helpful assistant." },
+        ];
+      }
+
+      userChatHistories[senderId].push({ role: "user", content: messageContent });
+
+      const payload = {
+        model: "llama-3.3-70b-versatile",
+        messages: userChatHistories[senderId],
+      };
+
+      const response = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer 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`,
+          },
+        }
+      );
+
+      const aiMessage = response.data.choices[0].message.content;
+      userChatHistories[senderId].push({ role: "assistant", content: aiMessage });
+
+      if (!globalChatHistory[senderId]) {
+        globalChatHistory[senderId] = [];
+      }
+      globalChatHistory[senderId].push({
+        user: messageContent,
+        assistant: aiMessage,
+      });
+
+      // Delete the old reply handler before sending the new message
+      if (event.message.reply_to) {
+        global.replyHandlers.delete(event.message.reply_to.mid);
+      }
+
+      const messageResponse = await messenger.sendTextMessage(senderId, aiMessage);
+      
+      // Set new handler for this message
+      if (messageResponse && messageResponse.message_id) {
+        global.replyHandlers.set(messageResponse.message_id, {
+          recipientId: event.recipient.id,
+          commandName: "ai"
+        });
+      }
+    } catch (error) {
+      console.error("AI reply execution error:", error.message);
+      await messenger.sendTextMessage(
+        senderId,
+        "⚠️ Sorry, I couldn't process your reply right now. Please try again later."
+      );
+    }
+  }
 };

@@ -1,3 +1,6 @@
+// Create a global map to store reply handlers
+global.replyHandlers = global.replyHandlers || new Map();
+
 const { logger } = require("./utils/logger");
 const { metrics } = require("./utils/metrics");
 const fs = require("fs").promises;
@@ -26,16 +29,41 @@ async function loadCommands() {
 async function handleCommand(messenger, senderId, message, event) {
   console.log(event);
   await messenger.markMessageSeen(event.sender.id);
+  
+  // Check if this is a reply to a previous message
+  if (event.message && event.message.reply_to) {
+    const repliedToMid = event.message.reply_to.mid;
+    const handler = global.replyHandlers.get(repliedToMid);
+    
+    if (handler && handler.recipientId === event.recipient.id) {
+      const command = commands.get(handler.commandName);
+      if (command && typeof command.replyExecute === 'function') {
+        try {
+          await command.replyExecute(messenger, senderId, event);
+          return;
+        } catch (error) {
+          logger.error(`Reply execution error for command: ${handler.commandName}`, error);
+          await messenger.sendTextMessage(senderId, "Reply handling failed.");
+          return;
+        }
+      }
+    }
+  }
+
+
   const config = JSON.parse(await fs.readFile("data/config.json", "utf8"));
   if (!message.startsWith(config.prefix)) return;
+  
   await messenger.sendTypingIndicator(event.sender.id, "typing_on");
   const args = message.slice(config.prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
   const command = commands.get(commandName);
-  if (!command)
+  
+  if (!command) {
     return messenger.sendTextMessage(senderId, "Command not found.");
+  }
 
-  // Check if sender is an admin
+  
   if (command.adminOnly) {
     const adminUids = JSON.parse(await fs.readFile("data/admins.json", "utf8"));
     console.log(adminUids);
@@ -57,4 +85,8 @@ async function handleCommand(messenger, senderId, message, event) {
   }
 }
 
-module.exports = { loadCommands, handleCommand, commands };
+module.exports = { 
+  loadCommands, 
+  handleCommand, 
+  commands
+};
