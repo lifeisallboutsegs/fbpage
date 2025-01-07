@@ -28,7 +28,7 @@ module.exports = {
     
     let helpText = `🤖 ${config.name}\n\n`;
     for (const [category, cmds] of Object.entries(categories)) {
-      helpText += `⌈${category}⌋\n${cmds.join(', ')}\n\n`;
+      helpText += `⌈${category.toUpperCase()}⌋\n${cmds.join(', ')}\n\n`;
     }
     helpText += `⇒ Total: ${commands.size} commands\n⇒ Use ${config.prefix}[command] to get more information about a command.`;
     
