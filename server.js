@@ -74,7 +74,7 @@ app.get("/data-deletion", (req, res) => {
 
 app.post("/webhook", async (req, res) => {
   const { body } = req;
-  
+  console.log(body);
   if (body.object === "page") {
     for (const entry of body.entry) {
       const messagingEvents = entry.messaging;
