@@ -70,14 +70,14 @@ module.exports = {
       if (messageResponse && messageResponse.message_id) {
         // Delete previous handlers for this user before setting the new one
         [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
-          if (handler.recipientId === event.recipient.id) {
+          if (handler.recipientId === event.sender.id) {
             global.replyHandlers.delete(mid);
           }
         });
 
         // Add the new handler
         global.replyHandlers.set(messageResponse.message_id, {
-          recipientId: event.recipient.id,
+          recipientId: event.sender.id,
           commandName: "ai",
         });
       }
@@ -148,7 +148,7 @@ module.exports = {
       if (messageResponse && messageResponse.message_id) {
         // Add the new reply handler
         global.replyHandlers.set(messageResponse.message_id, {
-          recipientId: event.recipient.id,
+          recipientId: event.sender.id,
           commandName: "ai",
         });
       }

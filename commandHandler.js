@@ -27,13 +27,14 @@ async function loadCommands() {
 }
 
 async function handleCommand(messenger, senderId, message, event) {
-  console.log(comman);
+
   await messenger.markMessageSeen(event.sender.id);
   
   // Check if this is a reply to a previous message
   if (event.message && event.message.reply_to) {
     const repliedToMid = event.message.reply_to.mid;
     const handler = global.replyHandlers.get(repliedToMid);
+    console.log(global.replyHandlers);
     
     if (handler && handler.recipientId === event.sender.id) {
       const command = commands.get(handler.commandName);
