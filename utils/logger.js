@@ -1,89 +1,152 @@
 const winston = require('winston');
 const path = require('path');
-const colors = require('colors');
+const morgan = require('morgan');
+const chalk = require('chalk');
+const DailyRotateFile = require('winston-daily-rotate-file');
 
-// Custom format for console output
-const consoleFormat = winston.format.printf(({ level, message, timestamp }) => {
+async function loadESMPackage(packageName) {
+  return (await import(packageName));
+}
+
+// Custom log levels
+const logLevels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
+  trace: 5,
+};
+
+
+const detailedFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+  let msg = `${timestamp} [${level.toUpperCase()}] ${message}`;
+  if (Object.keys(metadata).length > 0) {
+    msg += ` ${JSON.stringify(metadata)}`;
+  }
+  return msg;
+});
+
+
+const consoleFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
   const icons = {
-    error: '✖'.red,
-    warn: '⚠'.yellow,
-    info: 'ℹ'.blue,
-    debug: '🔍'.grey,
-    verbose: '🗣'.cyan,
+    error: '🔥',
+    warn: '⚠️',
+    info: 'ℹ️',
+    http: '🌐',
+    debug: '🔍',
+    trace: '📍',
   };
 
-  const colorsMap = {
-    error: 'red',
-    warn: 'yellow',
-    info: 'blue',
-    debug: 'grey',
-    verbose: 'cyan',
+  const levelColors = {
+    error: chalk.red,
+    warn: chalk.yellow,
+    info: chalk.blue,
+    http: chalk.cyan,
+    debug: chalk.magenta,
+    trace: chalk.gray,
   };
 
-  const colorize = colors[colorsMap[level]] || ((text) => text); // Fallback to no color
-  return `${timestamp.grey} ${icons[level]} ${colorize(level.toUpperCase())} ${message}`;
+  let msg = `${chalk.gray(timestamp)} ${icons[level]} ${levelColors[level](level.toUpperCase())} ${message}`;
+  
+  if (Object.keys(metadata).length > 0) {
+    msg += `\n${chalk.gray(JSON.stringify(metadata, null, 2))}`;
+  }
+  return msg;
 });
 
-// Custom format for file output (without colors)
-const fileFormat = winston.format.printf(({ level, message, timestamp }) => {
-  return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-});
 
 const logger = winston.createLogger({
+  levels: logLevels,
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
-    winston.format.timestamp({
-      format: 'YYYY-MM-DD HH:mm:ss',
-    }),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
     winston.format.errors({ stack: true }),
-    winston.format.splat(),
+    winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'messenger-bot' },
   transports: [
-    // Console transport with colors
+
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
         consoleFormat
       ),
     }),
-    // File transport for all logs
-    new winston.transports.File({
-      filename: path.join(__dirname, '../logs/combined.log'),
-      format: winston.format.combine(fileFormat),
+    
+
+    new DailyRotateFile({
+      filename: path.join(__dirname, '../logs/%DATE%-combined.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: winston.format.combine(detailedFormat),
     }),
-    // Separate file for error logs
-    new winston.transports.File({
-      filename: path.join(__dirname, '../logs/error.log'),
+
+
+    new DailyRotateFile({
+      filename: path.join(__dirname, '../logs/%DATE%-error.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '30d',
       level: 'error',
-      format: winston.format.combine(fileFormat),
+      format: winston.format.combine(detailedFormat),
     }),
   ],
 });
 
-// Add request logging middleware
-const requestLogger = (req, res, next) => {
+
+const morganMiddleware = morgan(
+  ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" - :response-time ms',
+  {
+    stream: {
+      write: (message) => logger.http(message.trim()),
+    },
+  }
+);
+
+
+const performanceLogger = (req, res, next) => {
   const start = process.hrtime();
+
+
+  if (Object.keys(req.body).length > 0) {
+    logger.debug('Request body:', { body: req.body });
+  }
 
   res.on('finish', () => {
     const duration = process.hrtime(start);
     const durationMs = (duration[0] * 1000 + duration[1] / 1e6).toFixed(2);
 
-    logger.debug(
-      `${req.method} ${req.originalUrl} ${res.statusCode} - ${durationMs}ms`,
-      {
-        method: req.method,
-        url: req.originalUrl,
-        status: res.statusCode,
-        duration: durationMs,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      }
-    );
+    logger.http('Request completed', {
+      method: req.method,
+      url: req.originalUrl,
+      status: res.statusCode,
+      duration: `${durationMs}ms`,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
   });
 
   next();
 };
 
-module.exports = { logger, requestLogger };
+
+const errorLogger = (err, req, res, next) => {
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    body: req.body,
+    user: req.user,
+  });
+  next(err);
+};
+
+module.exports = {
+  logger,
+  morganMiddleware,
+  performanceLogger,
+  errorLogger,
+};
