@@ -8,18 +8,36 @@ module.exports = {
   description: 'Set debug level',
   async execute(messenger, senderId, args) {
     const level = args[0]?.toLowerCase();
-    const validLevels = ['error', 'warn', 'info', 'debug'];
+    const validLevels = Object.keys(logger.levels);
     
     if (!validLevels.includes(level)) {
-      return messenger.sendTextMessage(senderId, 
-        `❌ Invalid level. Use: ${validLevels.join(', ')}`);
+      logger.warn('Invalid debug level attempted', {
+        attemptedLevel: level,
+        senderId
+      });
+      
+      return messenger.sendTextMessage(
+        senderId,
+        `❌ Invalid level. Valid levels are: ${validLevels.join(', ')}`
+      );
     }
     
+    const oldLevel = logger.level;
     logger.level = level;
+    
     const config = JSON.parse(await fs.readFile('data/config.json', 'utf8'));
     config.debugLevel = level;
     await fs.writeFile('data/config.json', JSON.stringify(config, null, 2));
     
-    await messenger.sendTextMessage(senderId, `✅ Debug level set to ${level}`);
+    logger.info('Debug level changed', {
+      oldLevel,
+      newLevel: level,
+      senderId
+    });
+    
+    await messenger.sendTextMessage(
+      senderId,
+      `✅ Debug level changed from ${oldLevel} to ${level}`
+    );
   }
 };
