@@ -1,8 +1,7 @@
-// Create a global map to store reply handlers
+
 global.replyHandlers = global.replyHandlers || new Map();
 
-const { logger } = require("./utils/logger");
-const { metrics } = require("./utils/metrics");
+const { logger, metrics } = require("./utils/logger"); 
 const fs = require("fs").promises;
 const path = require("path");
 
@@ -27,23 +26,32 @@ async function loadCommands() {
 }
 
 async function handleCommand(messenger, senderId, message, event) {
-
   await messenger.markMessageSeen(event.sender.id);
-  
-  // Check if this is a reply to a previous message
+
+ 
   if (event.message && event.message.reply_to) {
     const repliedToMid = event.message.reply_to.mid;
     const handler = global.replyHandlers.get(repliedToMid);
-    console.log(global.replyHandlers);
-    
+
     if (handler && handler.recipientId === event.sender.id) {
       const command = commands.get(handler.commandName);
-      if (command && typeof command.replyExecute === 'function') {
+      if (command && typeof command.replyExecute === "function") {
         try {
+          logger.info(`Executing reply for command: ${handler.commandName}`, {
+            senderId: senderId,
+            messageId: event.message.mid,
+          });
           await command.replyExecute(messenger, senderId, event);
           return;
         } catch (error) {
-          logger.error(`Reply execution error for command: ${handler.commandName}`, error);
+          logger.error(
+            `Reply execution error for command: ${handler.commandName}`,
+            error,
+            {
+              senderId: senderId,
+              messageId: event.message.mid,
+            }
+          );
           await messenger.sendTextMessage(senderId, "Reply handling failed.");
           return;
         }
@@ -51,24 +59,37 @@ async function handleCommand(messenger, senderId, message, event) {
     }
   }
 
-
   const config = JSON.parse(await fs.readFile("data/config.json", "utf8"));
   if (!message.startsWith(config.prefix)) return;
-  
+
   await messenger.sendTypingIndicator(event.sender.id, "typing_on");
   const args = message.slice(config.prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
   const command = commands.get(commandName);
-  
+
   if (!command) {
-    return messenger.sendTextMessage(senderId, "Command not found.", event.message.mid);
+    logger.warn(`Command not found: ${commandName}`, {
+      senderId: senderId,
+      messageId: event.message.mid,
+    });
+    return messenger.sendTextMessage(
+      senderId,
+      "Command not found.",
+      event.message.mid
+    );
   }
 
-  
+
   if (command.adminOnly) {
     const adminUids = JSON.parse(await fs.readFile("data/admins.json", "utf8"));
-    console.log(adminUids);
     if (!adminUids.includes(parseInt(senderId))) {
+      logger.warn(
+        `Permission denied for user ${senderId} on command: ${commandName}`,
+        {
+          senderId: senderId,
+          commandName: commandName,
+        }
+      );
       return messenger.sendTextMessage(
         senderId,
         "You do not have permission to use this command."
@@ -78,16 +99,29 @@ async function handleCommand(messenger, senderId, message, event) {
 
   try {
     const start = Date.now();
+    logger.info(`Executing command: ${commandName}`, {
+      senderId: senderId,
+      commandName: commandName,
+      timestamp: start,
+    });
     await command.execute(messenger, senderId, args, event);
-    metrics.updateMetrics(commandName, Date.now() - start);
+    const duration = Date.now() - start;
+    metrics.updateMetrics(commandName, duration); 
+    logger.info(`Command executed successfully: ${commandName}`, {
+      senderId: senderId,
+      duration: duration,
+    });
   } catch (error) {
-    logger.error(`Command error: ${commandName}`, error);
+    logger.error(`Command execution error: ${commandName}`, error, {
+      senderId: senderId,
+      commandName: commandName,
+    });
     await messenger.sendTextMessage(senderId, "Command execution failed.");
   }
 }
 
-module.exports = { 
-  loadCommands, 
-  handleCommand, 
-  commands
+module.exports = {
+  loadCommands,
+  handleCommand,
+  commands,
 };
