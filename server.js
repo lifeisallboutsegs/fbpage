@@ -74,6 +74,7 @@ app.get("/data-deletion", (req, res) => {
 
 app.post("/webhook", async (req, res) => {
   const { body } = req;
+  console.log(process.env.ACCESS_TOKEN);
   console.log(body.entry[0].messaging);
   if (body.object === "page") {
     for (const entry of body.entry) {
