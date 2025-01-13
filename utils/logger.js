@@ -47,13 +47,16 @@ const consoleFormat = winston.format.printf(({ level, message, timestamp, ...met
     trace: chalk.gray,
   };
 
-  let msg = `${chalk.gray(timestamp)} ${icons[level]} ${levelColors[level](level.toUpperCase())} ${message}`;
+  const colorize = levelColors[level] || chalk.white; // Default to `chalk.white` if no color defined for `level`.
+
+  let msg = `${chalk.gray(timestamp)} ${icons[level] || ''} ${colorize(level.toUpperCase())} ${message}`;
   
   if (Object.keys(metadata).length > 0) {
     msg += `\n${chalk.gray(JSON.stringify(metadata, null, 2))}`;
   }
   return msg;
 });
+
 
 
 const logger = winston.createLogger({
