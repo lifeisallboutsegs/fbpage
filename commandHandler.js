@@ -1,7 +1,8 @@
 
 global.replyHandlers = global.replyHandlers || new Map();
 
-const { logger, metrics } = require("./utils/logger"); 
+const { logger } = require("./utils/logger");
+const { metrics } = require("./utils/metrics");
 const fs = require("fs").promises;
 const path = require("path");
 
