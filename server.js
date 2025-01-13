@@ -26,8 +26,6 @@ const messenger = new Messenger(
 
 
 app.use(bodyParser.json());
-app.use(morganMiddleware); 
-app.use(performanceLogger);
 
 async function checkRestartStatus() {
   const filePath = "data/restart.json";
