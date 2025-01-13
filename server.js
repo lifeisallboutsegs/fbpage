@@ -1,13 +1,19 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { Messenger, Platforms } = require("./messenger.js");
-const { logger } = require("./utils/logger.js");
+const {
+  logger,
+  morganMiddleware,
+  performanceLogger,
+  errorLogger,
+} = require("./utils/logger.js");
 const { metrics } = require("./utils/metrics");
 const { handleCommand, loadCommands } = require("./commandHandler");
 const fs = require("fs").promises;
 const path = require("path");
 require("dotenv").config();
 loadCommands();
+
 const app = express();
 const port = process.env.PORT || 3000;
 let startTime = Date.now();
@@ -18,7 +24,10 @@ const messenger = new Messenger(
   process.env.ACCESS_TOKEN
 );
 
+
 app.use(bodyParser.json());
+app.use(morganMiddleware); 
+app.use(performanceLogger);
 
 async function checkRestartStatus() {
   const filePath = "data/restart.json";
@@ -39,7 +48,7 @@ async function checkRestartStatus() {
         } seconds.`
       );
 
-      // Update restart status to false
+
       restartInfo.restarted = false;
       await fs.writeFile(filePath, JSON.stringify(restartInfo));
     }
@@ -100,7 +109,10 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// Error handling
+
+app.use(errorLogger); 
+
+
 process.on("unhandledRejection", (error) => {
   logger.error("Unhandled rejection:", error);
 });
