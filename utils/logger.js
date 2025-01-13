@@ -19,16 +19,13 @@ const logLevels = {
 };
 
 
-const detailedFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+const detailedFormat = winston.format.printf(({ level, message, timestamp, }) => {
   let msg = `${timestamp} [${level.toUpperCase()}] ${message}`;
-  if (Object.keys(metadata).length > 0) {
-    msg += ` ${JSON.stringify(metadata)}`;
-  }
   return msg;
 });
 
 
-const consoleFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+const consoleFormat = winston.format.printf(({ level, message, timestamp }) => {
   const icons = {
     error: '🔥',
     warn: '⚠️',
@@ -50,10 +47,6 @@ const consoleFormat = winston.format.printf(({ level, message, timestamp, ...met
   const colorize = levelColors[level] || chalk.white; // Default to `chalk.white` if no color defined for `level`.
 
   let msg = `${chalk.gray(timestamp)} ${icons[level] || ''} ${colorize(level.toUpperCase())} ${message}`;
-  
-  if (Object.keys(metadata).length > 0) {
-    msg += `\n${chalk.gray(JSON.stringify(metadata, null, 2))}`;
-  }
   return msg;
 });
 
@@ -65,7 +58,6 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
     winston.format.errors({ stack: true }),
-    winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] }),
     winston.format.json()
   ),
   transports: [
