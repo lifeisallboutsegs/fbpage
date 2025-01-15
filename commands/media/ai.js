@@ -49,7 +49,7 @@ module.exports = {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+            Authorization: `Bearer e29ff7078735895d5cbd3c29e5ae9fc803d9b96c5bd469c9b501dbc10934d5bc`,
           },
         }
       );
@@ -127,7 +127,7 @@ module.exports = {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+            Authorization: `Bearer e29ff7078735895d5cbd3c29e5ae9fc803d9b96c5bd469c9b501dbc10934d5bc`,
           },
         }
       );
