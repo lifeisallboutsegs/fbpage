@@ -49,44 +49,64 @@ module.exports = {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer e29ff7078735895d5cbd3c29e5ae9fc803d9b96c5bd469c9b501dbc10934d5bc`,
+            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
           },
+          responseType: "stream",
         }
       );
 
-      const aiMessage = response.data.choices[0].message.content;
-      userChatHistories[senderId].push({
-        role: "assistant",
-        content: aiMessage,
+      let aiMessage = "";
+
+      response.data.on("data", (chunk) => {
+        const data = chunk.toString().trim();
+        if (data !== "[DONE]") {
+          const parsedData = JSON.parse(data);
+          const delta = parsedData.choices[0]?.delta?.content || "";
+          aiMessage += delta;
+        }
       });
 
-      if (!globalChatHistory[senderId]) {
-        globalChatHistory[senderId] = [];
-      }
-      globalChatHistory[senderId].push({
-        user: messageContent,
-        assistant: aiMessage,
+      response.data.on("end", async () => {
+        userChatHistories[senderId].push({
+          role: "assistant",
+          content: aiMessage,
+        });
+
+        if (!globalChatHistory[senderId]) {
+          globalChatHistory[senderId] = [];
+        }
+
+        globalChatHistory[senderId].push({
+          user: messageContent,
+          assistant: aiMessage,
+        });
+
+        const messageResponse = await messenger.sendTextMessage(
+          senderId,
+          aiMessage
+        );
+
+        if (messageResponse && messageResponse.message_id) {
+          [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
+            if (handler.recipientId === event.sender.id) {
+              global.replyHandlers.delete(mid);
+            }
+          });
+
+          global.replyHandlers.set(messageResponse.message_id, {
+            recipientId: event.sender.id,
+            commandName: "ai",
+          });
+        }
       });
 
-      const messageResponse = await messenger.sendTextMessage(
-        senderId,
-        aiMessage
-      );
-
-      if (messageResponse && messageResponse.message_id) {
-        [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
-          if (handler.recipientId === event.sender.id) {
-            global.replyHandlers.delete(mid);
-          }
-        });
-
-        global.replyHandlers.set(messageResponse.message_id, {
-          recipientId: event.sender.id,
-          commandName: "ai",
-        });
-      }
+      response.data.on("error", async (error) => {
+        await messenger.sendTextMessage(
+          senderId,
+          "⚠️ Sorry, I couldn't process your request right now. Please try again later."
+        );
+      });
     } catch (error) {
-      console.error("AI command error:", error.message);
       await messenger.sendTextMessage(
         senderId,
         "⚠️ Sorry, I couldn't process your request right now. Please try again later."
@@ -127,42 +147,62 @@ module.exports = {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer e29ff7078735895d5cbd3c29e5ae9fc803d9b96c5bd469c9b501dbc10934d5bc`,
+            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
           },
+          responseType: "stream",
         }
       );
 
-      const aiMessage = response.data.choices[0].message.content;
-      userChatHistories[senderId].push({
-        role: "assistant",
-        content: aiMessage,
+      let aiMessage = "";
+
+      response.data.on("data", (chunk) => {
+        const data = chunk.toString().trim();
+        if (data !== "[DONE]") {
+          const parsedData = JSON.parse(data);
+          const delta = parsedData.choices[0]?.delta?.content || "";
+          aiMessage += delta;
+        }
       });
 
-      if (!globalChatHistory[senderId]) {
-        globalChatHistory[senderId] = [];
-      }
-      globalChatHistory[senderId].push({
-        user: messageContent,
-        assistant: aiMessage,
-      });
-
-      if (event.message.reply_to) {
-        global.replyHandlers.delete(event.message.reply_to.mid);
-      }
-
-      const messageResponse = await messenger.sendTextMessage(
-        senderId,
-        aiMessage
-      );
-
-      if (messageResponse && messageResponse.message_id) {
-        global.replyHandlers.set(messageResponse.message_id, {
-          recipientId: event.sender.id,
-          commandName: "ai",
+      response.data.on("end", async () => {
+        userChatHistories[senderId].push({
+          role: "assistant",
+          content: aiMessage,
         });
-      }
+
+        if (!globalChatHistory[senderId]) {
+          globalChatHistory[senderId] = [];
+        }
+
+        globalChatHistory[senderId].push({
+          user: messageContent,
+          assistant: aiMessage,
+        });
+
+        if (event.message.reply_to) {
+          global.replyHandlers.delete(event.message.reply_to.mid);
+        }
+
+        const messageResponse = await messenger.sendTextMessage(
+          senderId,
+          aiMessage
+        );
+
+        if (messageResponse && messageResponse.message_id) {
+          global.replyHandlers.set(messageResponse.message_id, {
+            recipientId: event.sender.id,
+            commandName: "ai",
+          });
+        }
+      });
+
+      response.data.on("error", async (error) => {
+        await messenger.sendTextMessage(
+          senderId,
+          "⚠️ Sorry, I couldn't process your reply right now. Please try again later."
+        );
+      });
     } catch (error) {
-      console.error("AI reply execution error:", error.message);
       await messenger.sendTextMessage(
         senderId,
         "⚠️ Sorry, I couldn't process your reply right now. Please try again later."
