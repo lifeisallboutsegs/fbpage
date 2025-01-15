@@ -1,7 +1,7 @@
 const axios = require("axios");
 
-const globalChatHistory = {}; // Stores chat history globally
-const userChatHistories = {}; // Stores chat history per user
+const globalChatHistory = {};
+const userChatHistories = {};
 
 module.exports = {
   name: "ai",
@@ -20,7 +20,6 @@ module.exports = {
         return;
       }
 
-      // Initialize chat history for the user if not already present
       if (!userChatHistories[senderId]) {
         userChatHistories[senderId] = [
           { role: "system", content: "You are a helpful assistant." },
@@ -33,17 +32,24 @@ module.exports = {
       });
 
       const payload = {
-        model: "llama-3.3-70b-versatile",
+        model: "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
         messages: userChatHistories[senderId],
+        max_tokens: 512,
+        temperature: 1.19,
+        top_p: 0.7,
+        top_k: 50,
+        repetition_penalty: 1,
+        stop: ["<|eot_id|>", "<|eom_id|>"],
+        stream: true,
       };
 
       const response = await axios.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://api.together.xyz/v1/chat/completions",
         payload,
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer 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`,
+            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
           },
         }
       );
@@ -68,14 +74,12 @@ module.exports = {
       );
 
       if (messageResponse && messageResponse.message_id) {
-        // Delete previous handlers for this user before setting the new one
         [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
           if (handler.recipientId === event.sender.id) {
             global.replyHandlers.delete(mid);
           }
         });
 
-        // Add the new handler
         global.replyHandlers.set(messageResponse.message_id, {
           recipientId: event.sender.id,
           commandName: "ai",
@@ -106,17 +110,24 @@ module.exports = {
       });
 
       const payload = {
-        model: "llama-3.3-70b-versatile",
+        model: "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
         messages: userChatHistories[senderId],
+        max_tokens: 512,
+        temperature: 1.19,
+        top_p: 0.7,
+        top_k: 50,
+        repetition_penalty: 1,
+        stop: ["<|eot_id|>", "<|eom_id|>"],
+        stream: true,
       };
 
       const response = await axios.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://api.together.xyz/v1/chat/completions",
         payload,
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer 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`,
+            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
           },
         }
       );
@@ -135,7 +146,6 @@ module.exports = {
         assistant: aiMessage,
       });
 
-      // Remove the old reply handler if it exists
       if (event.message.reply_to) {
         global.replyHandlers.delete(event.message.reply_to.mid);
       }
@@ -146,7 +156,6 @@ module.exports = {
       );
 
       if (messageResponse && messageResponse.message_id) {
-        // Add the new reply handler
         global.replyHandlers.set(messageResponse.message_id, {
           recipientId: event.sender.id,
           commandName: "ai",
