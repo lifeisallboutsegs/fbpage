@@ -78,22 +78,39 @@ class Messenger {
     });
   }
 
-  async sendTextMessage(userId, message, reply) {
+ async sendTextMessage(userId, message, reply) {
     await metrics.incrementCount();
+
     const baseParams = {
-      recipient: JSON.stringify({ id: userId }),
-      messaging_type: MessageTypes.RESPONSE,
+        recipient: JSON.stringify({ id: userId }),
+        messaging_type: MessageTypes.RESPONSE,
     };
-    
-    return this.#sendApiRequest(
-      `${this.pageId}/messages`,
-      {
-        ...baseParams,
-        message: JSON.stringify({ text: message }),
-      },
-      "POST"
-    );
-  }
+
+    const sendMessage = async (msg) => {
+        return this.#sendApiRequest(
+            `${this.pageId}/messages`,
+            {
+                ...baseParams,
+                message: JSON.stringify({ text: msg }),
+            },
+            "POST"
+        );
+    };
+
+    while (message.length > 1999) {
+        let splitIndex = message.lastIndexOf(' ', 1999);
+        if (splitIndex === -1) {
+            splitIndex = 1999;
+        }
+        
+        const part = message.substring(0, splitIndex);
+        await sendMessage(part);
+        message = message.substring(splitIndex + 1);
+    }
+
+    return sendMessage(message);
+}
+
   async sendImage(userId, imageUrl) {
     metrics.incrementCount();
     return this.#sendApiRequest(
