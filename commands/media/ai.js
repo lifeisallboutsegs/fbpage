@@ -43,96 +43,101 @@ module.exports = {
         stream: true,
       };
 
-      const response = await axios.post(
-        "https://api.together.xyz/v1/chat/completions",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
-            Accept: "text/event-stream",
-          },
-        }
-      );
+      const response = await axios({
+        method: 'post',
+        url: "https://api.together.xyz/v1/chat/completions",
+        data: payload,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+          Accept: "text/event-stream"
+        },
+        responseType: 'stream'
+      });
 
       let aiMessage = "";
       const decoder = new TextDecoder();
       let buffer = "";
 
-      response.data.on("data", (chunk) => {
-        buffer += decoder.decode(chunk, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        
-        for (const line of lines) {
-          if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+      response.data.on('readable', () => {
+        let chunk;
+        while (null !== (chunk = response.data.read())) {
+          buffer += decoder.decode(chunk, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
           
-          if (line.startsWith('data: ')) {
-            try {
-              const json = JSON.parse(line.slice(6));
-              const content = json.choices[0]?.delta?.content || '';
-              aiMessage += content;
-            } catch (err) {
-              console.error('Error parsing SSE data:', err);
+          for (const line of lines) {
+            if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices[0]?.delta?.content || '';
+                aiMessage += content;
+              } catch (err) {
+                console.error('Error parsing SSE data:', err);
+              }
             }
           }
         }
       });
 
-      response.data.on("end", async () => {
-        if (buffer.length > 0) {
-          const line = buffer.trim();
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const json = JSON.parse(line.slice(6));
-              const content = json.choices[0]?.delta?.content || '';
-              aiMessage += content;
-            } catch (err) {
-              console.error('Error parsing final SSE data:', err);
+      await new Promise((resolve, reject) => {
+        response.data.on('end', async () => {
+          if (buffer.length > 0) {
+            const line = buffer.trim();
+            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices[0]?.delta?.content || '';
+                aiMessage += content;
+              } catch (err) {
+                console.error('Error parsing final SSE data:', err);
+              }
             }
           }
-        }
 
-        userChatHistories[senderId].push({
-          role: "assistant",
-          content: aiMessage,
-        });
+          userChatHistories[senderId].push({
+            role: "assistant",
+            content: aiMessage,
+          });
 
-        if (!globalChatHistory[senderId]) {
-          globalChatHistory[senderId] = [];
-        }
+          if (!globalChatHistory[senderId]) {
+            globalChatHistory[senderId] = [];
+          }
 
-        globalChatHistory[senderId].push({
-          user: messageContent,
-          assistant: aiMessage,
-        });
+          globalChatHistory[senderId].push({
+            user: messageContent,
+            assistant: aiMessage,
+          });
 
-        const messageResponse = await messenger.sendTextMessage(
-          senderId,
-          aiMessage
-        );
+          try {
+            const messageResponse = await messenger.sendTextMessage(
+              senderId,
+              aiMessage
+            );
 
-        if (messageResponse && messageResponse.message_id) {
-          [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
-            if (handler.recipientId === event.sender.id) {
-              global.replyHandlers.delete(mid);
+            if (messageResponse && messageResponse.message_id) {
+              [...global.replyHandlers.entries()].forEach(([mid, handler]) => {
+                if (handler.recipientId === event.sender.id) {
+                  global.replyHandlers.delete(mid);
+                }
+              });
+
+              global.replyHandlers.set(messageResponse.message_id, {
+                recipientId: event.sender.id,
+                commandName: "ai",
+              });
             }
-          });
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
 
-          global.replyHandlers.set(messageResponse.message_id, {
-            recipientId: event.sender.id,
-            commandName: "ai",
-          });
-        }
+        response.data.on('error', reject);
       });
 
-      response.data.on("error", async (error) => {
-        console.error("Stream error:", error);
-        await messenger.sendTextMessage(
-          senderId,
-          "⚠️ Sorry, I couldn't process your request right now. Please try again later."
-        );
-      });
     } catch (error) {
       console.error("Execute error:", error);
       await messenger.sendTextMessage(
@@ -169,94 +174,99 @@ module.exports = {
         stream: true,
       };
 
-      const response = await axios.post(
-        "https://api.together.xyz/v1/chat/completions",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
-            Accept: "text/event-stream",
-          },
-        }
-      );
+      const response = await axios({
+        method: 'post',
+        url: "https://api.together.xyz/v1/chat/completions",
+        data: payload,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+          Accept: "text/event-stream"
+        },
+        responseType: 'stream'
+      });
 
       let aiMessage = "";
       const decoder = new TextDecoder();
       let buffer = "";
 
-      response.data.on("data", (chunk) => {
-        buffer += decoder.decode(chunk, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        
-        for (const line of lines) {
-          if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+      response.data.on('readable', () => {
+        let chunk;
+        while (null !== (chunk = response.data.read())) {
+          buffer += decoder.decode(chunk, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
           
-          if (line.startsWith('data: ')) {
-            try {
-              const json = JSON.parse(line.slice(6));
-              const content = json.choices[0]?.delta?.content || '';
-              aiMessage += content;
-            } catch (err) {
-              console.error('Error parsing SSE data:', err);
+          for (const line of lines) {
+            if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices[0]?.delta?.content || '';
+                aiMessage += content;
+              } catch (err) {
+                console.error('Error parsing SSE data:', err);
+              }
             }
           }
         }
       });
 
-      response.data.on("end", async () => {
-        if (buffer.length > 0) {
-          const line = buffer.trim();
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const json = JSON.parse(line.slice(6));
-              const content = json.choices[0]?.delta?.content || '';
-              aiMessage += content;
-            } catch (err) {
-              console.error('Error parsing final SSE data:', err);
+      await new Promise((resolve, reject) => {
+        response.data.on('end', async () => {
+          if (buffer.length > 0) {
+            const line = buffer.trim();
+            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices[0]?.delta?.content || '';
+                aiMessage += content;
+              } catch (err) {
+                console.error('Error parsing final SSE data:', err);
+              }
             }
           }
-        }
 
-        userChatHistories[senderId].push({
-          role: "assistant",
-          content: aiMessage,
-        });
-
-        if (!globalChatHistory[senderId]) {
-          globalChatHistory[senderId] = [];
-        }
-
-        globalChatHistory[senderId].push({
-          user: messageContent,
-          assistant: aiMessage,
-        });
-
-        if (event.message.reply_to) {
-          global.replyHandlers.delete(event.message.reply_to.mid);
-        }
-
-        const messageResponse = await messenger.sendTextMessage(
-          senderId,
-          aiMessage
-        );
-
-        if (messageResponse && messageResponse.message_id) {
-          global.replyHandlers.set(messageResponse.message_id, {
-            recipientId: event.sender.id,
-            commandName: "ai",
+          userChatHistories[senderId].push({
+            role: "assistant",
+            content: aiMessage,
           });
-        }
+
+          if (!globalChatHistory[senderId]) {
+            globalChatHistory[senderId] = [];
+          }
+
+          globalChatHistory[senderId].push({
+            user: messageContent,
+            assistant: aiMessage,
+          });
+
+          try {
+            if (event.message.reply_to) {
+              global.replyHandlers.delete(event.message.reply_to.mid);
+            }
+
+            const messageResponse = await messenger.sendTextMessage(
+              senderId,
+              aiMessage
+            );
+
+            if (messageResponse && messageResponse.message_id) {
+              global.replyHandlers.set(messageResponse.message_id, {
+                recipientId: event.sender.id,
+                commandName: "ai",
+              });
+            }
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+
+        response.data.on('error', reject);
       });
 
-      response.data.on("error", async (error) => {
-        console.error("Stream error:", error);
-        await messenger.sendTextMessage(
-          senderId,
-          "⚠️ Sorry, I couldn't process your reply right now. Please try again later."
-        );
-      });
     } catch (error) {
       console.error("ReplyExecute error:", error);
       await messenger.sendTextMessage(
